@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>유튜브 구간 반복 플레이어 (구간 저장 기능 포함)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        input[type=range] {
+            accent-color: #ef4444;
+        }
+        /* Custom scrollbar for saved loops list */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 116, 139, 1);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-red-500 selection:text-white">
+
+    <header class="w-full border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-red-600 text-white p-2.5 rounded-xl shadow-lg shadow-red-600/30 flex items-center justify-center">
+                    <i class="fa-solid fa-rotate text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white">TubeLoop Pro</h1>
+                    <p class="text-xs text-slate-400">구간 반복 및 구간 설정 저장 플레이어</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="exportData()" title="저장된 목록 백업 (JSON)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-xl border border-slate-700 flex items-center space-x-1.5 transition-colors">
+                    <i class="fa-solid fa-download"></i>
+                    <span class="hidden sm:inline">내보내기</span>
+                </button>
+                <label title="백업 파일 불러오기" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-xl border border-slate-700 flex items-center space-x-1.5 cursor-pointer transition-colors">
+                    <i class="fa-solid fa-upload"></i>
+                    <span class="hidden sm:inline">가져오기</span>
+                    <input type="file" id="importFile" accept=".json" onchange="importData(event)" class="hidden">
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl w-full mx-auto px-4 py-8 flex-grow flex flex-col gap-8">
+        
+        <!-- URL Input Card -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur">
+            <label for="videoUrlInput" class="block text-sm font-medium text-slate-300 mb-2">
+                <i class="fa-brands fa-youtube text-red-500 mr-1.5"></i> 유튜브 영상 주소 (URL 또는 비디오 ID)
+            </label>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <input type="text" id="videoUrlInput" placeholder="예: https://www.youtube.com/watch?v=dQw4w9WgXcQ 또는 dQw4w9WgXcQ" 
+                    class="flex-grow bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition-colors">
+                <button onclick="loadVideo()" class="bg-red-600 hover:bg-red-500 text-white font-medium px-6 py-3 rounded-xl transition-all shadow-lg shadow-red-600/20 flex items-center justify-center space-x-2 shrink-0">
+                    <i class="fa-solid fa-play"></i>
+                    <span>영상 불러오기</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Player & Controls Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Video Player Column (2 span) -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="relative w-full aspect-video bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl flex items-center justify-center">
+                    <!-- YouTube Iframe container with Error 153 resilience attributes -->
+                    <div id="youtube-player" class="w-full h-full absolute inset-0" referrerpolicy="strict-origin-when-cross-origin"></div>
+                    <!-- Placeholder when no video loaded -->
+                    <div id="player-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-500 p-6 text-center">
+                        <i class="fa-solid fa-film text-4xl mb-3 text-slate-600"></i>
+                        <p class="text-sm font-medium text-slate-400">상단에 유튜브 링크를 입력하고 영상을 불러주세요.</p>
+                        <p class="text-xs text-slate-500 mt-1">youtube-nocookie.com 및 보안 헤더가 적용되어 있습니다.</p>
+                    </div>
+                </div>
+
+                <!-- Quick Action Bar under player -->
+                <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <button onclick="togglePlayPause()" id="playPauseBtn" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center transition-colors disabled:opacity-40" disabled>
+                            <i class="fa-solid fa-play" id="playPauseIcon"></i>
+                        </button>
+                        <div class="text-sm">
+                            <div class="text-slate-400 text-xs">현재 재생 시각</div>
+                            <div id="currentTimeDisplay" class="font-mono font-semibold text-slate-200">00:00 / 00:00</div>
+                        </div>
+                    </div>
+
+                    <!-- Speed Control -->
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-slate-400">속도:</span>
+                        <select id="playbackRate" onchange="changePlaybackRate()" class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-red-500">
+                            <option value="0.5">0.5x</option>
+                            <option value="0.75">0.75x</option>
+                            <option value="1" selected>1.0x (기본)</option>
+                            <option value="1.25">1.25x</option>
+                            <option value="1.5">1.5x</option>
+                            <option value="2">2.0x</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loop Controls Column (1 span) -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between gap-6 backdrop-blur">
+                <div class="flex flex-col gap-5">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-repeat text-red-500"></i> 구간 반복 설정
+                        </h2>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-slate-400">반복</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="loopToggle" class="sr-only peer" checked>
+                                <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-600"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Title / Memo for loop segment -->
+                    <div class="flex flex-col gap-1.5">
+                        <label for="segmentTitleInput" class="text-xs font-medium text-slate-300">구간 제목 / 메모</label>
+                        <input type="text" id="segmentTitleInput" placeholder="예: 후렴구 안무 연습 1번" 
+                            class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500">
+                    </div>
+
+                    <!-- Start Time Section -->
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-300 font-medium">시작 시간 (A)</span>
+                            <div class="flex items-center space-x-2">
+                                <input type="text" id="startTimeInput" value="00:00" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-center font-mono text-sm text-slate-200 focus:outline-none focus:border-red-500">
+                                <button onclick="setStartTimeCurrent()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 transition-colors">현재</button>
+                            </div>
+                        </div>
+                        <div class="flex gap-1.5">
+                            <button onclick="adjustTime('start', -1)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-1 rounded-lg border border-slate-700">-1초</button>
+                            <button onclick="adjustTime('start', -0.1)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-1 rounded-lg border border-slate-700">-0.1</button>
+                            <button onclick="adjustTime('start', 0.1)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-1 rounded-lg border border-slate-700">+0.1</button>
+                            <button onclick="adjustTime('start', 1)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-1 rounded-lg border border-slate-700">+1초</button>
+                        </div>
+                    </div>
+
+                    <!-- End Time Section -->
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-300 font-medium">종료 시간 (B)</span>
+                            <div class="flex items-center space-x-2">
+                                <input type="text" id="endTimeInput" value="00:10" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-center font-mono text-sm text-slate-200 focus:outline-none focus:border-red-500">
+                                <button onclick="setEndTimeCurrent()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 transition-colors">현재</button>
+                            </div>
+                        </div>
+                        <div class="flex gap-1.5">
+                            <button onclick="adjustTime('end', -1)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-1 rounded-lg border border-slate-700">-1초</button>
+                            <button onclick="adjustTime('end', -0.1)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-1 rounded-lg border border-slate-700">-0.1</button>
+                            <button onclick="adjustTime('end', 0.1)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-1 rounded-lg border border-slate-700">+0.1</button>
+                            <button onclick="adjustTime('end', 1)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-1 rounded-lg border border-slate-700">+1초</button>
+                        </div>
+                    </div>
+
+                    <!-- Loop Status Info -->
+                    <div class="bg-slate-950/60 rounded-xl p-3 border border-slate-800 text-xs text-slate-400 flex justify-between items-center">
+                        <span>반복 횟수: <strong id="loopCount" class="text-slate-200 font-mono">0</strong>회</span>
+                        <button onclick="resetLoopCount()" class="text-slate-500 hover:text-slate-300 underline">초기화</button>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col gap-2 pt-2 border-t border-slate-800">
+                    <button onclick="saveCurrentSegment()" class="w-full bg-red-600 hover:bg-red-500 text-white font-medium py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-red-600/20 flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>현재 구간 저장하기</span>
+                    </button>
+                    <button onclick="jumpToStart()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 rounded-xl text-xs transition-colors flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-backward-step text-red-500"></i>
+                        <span>시작(A)으로 이동</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Saved Segments Section -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4 mb-4">
+                <div>
+                    <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-bookmark text-red-500"></i> 저장된 구간 목록 (즐겨찾기)
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">현재 영상 또는 모든 영상에 저장된 반복 구간들을 관리합니다.</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="filterSegments('current')" id="filterCurrentBtn" class="bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-medium">현재 영상만</button>
+                    <button onclick="filterSegments('all')" id="filterAllBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors">전체 보기</button>
+                </div>
+            </div>
+
+            <div id="savedSegmentsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto pr-1">
+                <!-- Dynamically populated -->
+                <div class="col-span-full py-8 text-center text-slate-500 text-sm">
+                    저장된 구간이 없습니다. 구간을 설정하고 '현재 구간 저장하기'를 눌러보세요.
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="w-full border-t border-slate-800 py-6 mt-12 bg-slate-900/30 text-center text-xs text-slate-500">
+        <p>TubeLoop Pro &mdash; 유튜브 구간 반복 & 브라우저 자동 저장 플레이어</p>
+    </footer>
+
+    <!-- YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        let player;
+        let currentVideoId = '';
+        let loopCounter = 0;
+        let activeFilter = 'current'; // 'current' or 'all'
+        const STORAGE_KEY = 'tubeloop_saved_segments_v1';
+
+        // Load segments from localStorage
+        function getStoredSegments() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                return data ? JSON.parse(data) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // Save segments to localStorage
+        function saveStoredSegments(segments) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(segments));
+            } catch (e) {
+                showToast("저장 공간이 부족하거나 오류가 발생했습니다.");
+            }
+        }
+
+        // YouTube API Ready callback
+        function onYouTubeIframeAPIReady() {
+            // Ready
+        }
+
+        // Extract video ID from URL or return ID if raw
+        function extractVideoId(urlOrId) {
+            if (!urlOrId) return '';
+            urlOrId = urlOrId.trim();
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = urlOrId.match(regExp);
+            if (match && match[2].length === 11) {
+                return match[2];
+            } else if (urlOrId.length === 11) {
+                return urlOrId;
+            }
+            return null;
+        }
+
+        // Load video into iframe (using youtube-nocookie.com host to prevent Error 153)
+        function loadVideo(targetVideoId, startSec, endSec, segmentTitle) {
+            const inputVal = targetVideoId || document.getElementById('videoUrlInput').value;
+            const videoId = extractVideoId(inputVal);
+
+            if (!videoId) {
+                showToast("유효한 유튜브 URL 또는 비디오 ID를 입력해주세요.");
+                return;
+            }
+
+            currentVideoId = videoId;
+            if (!targetVideoId) {
+                document.getElementById('videoUrlInput').value = `https://www.youtube.com/watch?v=${videoId}`;
+            }
+
+            document.getElementById('player-placeholder').style.display = 'none';
+
+            if (!player) {
+                player = new YT.Player('youtube-player', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: videoId,
+                    host: 'https://www.youtube-nocookie.com',
+                    playerVars: {
+                        'playsinline': 1,
+                        'autoplay': 1,
+                        'controls': 1,
+                        'rel': 0
+                    },
+                    events: {
+                        'onReady': (event) => {
+                            onPlayerReady(event);
+                            if (startSec !== undefined && endSec !== undefined) {
+                                applySegment(startSec, endSec, segmentTitle);
+                            }
+                        },
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
+            } else {
+                player.loadVideoById(videoId);
+                if (startSec !== undefined && endSec !== undefined) {
+                    setTimeout(() => {
+                        applySegment(startSec, endSec, segmentTitle);
+                    }, 500);
+                }
+            }
+
+            renderSavedSegments();
+        }
+
+        function onPlayerReady(event) {
+            document.getElementById('playPauseBtn').disabled = false;
+            startIntervalMonitor();
+        }
+
+        function onPlayerStateChange(event) {
+            const icon = document.getElementById('playPauseIcon');
+            if (event.data == YT.PlayerState.PLAYING) {
+                icon.className = "fa-solid fa-pause";
+            } else {
+                icon.className = "fa-solid fa-play";
+            }
+        }
+
+        function togglePlayPause() {
+            if (!player || typeof player.getPlayerState !== 'function') return;
+            const state = player.getPlayerState();
+            if (state == YT.PlayerState.PLAYING) {
+                player.pauseVideo();
+            } else {
+                player.playVideo();
+            }
+        }
+
+        // Time format helpers: seconds <-> MM:SS.ms
+        function formatTime(seconds) {
+            if (isNaN(seconds) || seconds < 0) return "00:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = (seconds % 60).toFixed(1);
+            const padMins = mins < 10 ? '0' + mins : mins;
+            const padSecs = secs < 10 ? '0' + secs : secs;
+            return `${padMins}:${padSecs}`;
+        }
+
+        function parseTimeString(timeStr) {
+            if (!timeStr) return 0;
+            timeStr = timeStr.toString().trim();
+            if (timeStr.includes(':')) {
+                const parts = timeStr.split(':');
+                const mins = parseFloat(parts[0]) || 0;
+                const secs = parseFloat(parts[1]) || 0;
+                return mins * 60 + secs;
+            }
+            return parseFloat(timeStr) || 0;
+        }
+
+        // Monitor video current time and enforce loop
+        function startIntervalMonitor() {
+            setInterval(() => {
+                if (!player || typeof player.getCurrentTime !== 'function') return;
+                
+                try {
+                    const currentTime = player.getCurrentTime();
+                    const duration = player.getDuration() || 0;
+
+                    document.getElementById('currentTimeDisplay').innerText = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+
+                    const isLoopEnabled = document.getElementById('loopToggle').checked;
+                    if (!isLoopEnabled) return;
+
+                    const startTime = parseTimeString(document.getElementById('startTimeInput').value);
+                    const endTime = parseTimeString(document.getElementById('endTimeInput').value);
+
+                    if (endTime > startTime && endTime > 0) {
+                        if (currentTime >= endTime - 0.05) {
+                            player.seekTo(startTime, true);
+                            loopCounter++;
+                            document.getElementById('loopCount').innerText = loopCounter;
+                        }
+                    }
+                } catch (e) {
+                    // Ignore cross-frame errors
+                }
+            }, 100);
+        }
+
+        function setStartTimeCurrent() {
+            if (!player || typeof player.getCurrentTime !== 'function') return;
+            const t = player.getCurrentTime();
+            document.getElementById('startTimeInput').value = formatTime(t);
+        }
+
+        function setEndTimeCurrent() {
+            if (!player || typeof player.getCurrentTime !== 'function') return;
+            const t = player.getCurrentTime();
+            document.getElementById('endTimeInput').value = formatTime(t);
+        }
+
+        function adjustTime(type, delta) {
+            const inputId = type === 'start' ? 'startTimeInput' : 'endTimeInput';
+            const currentSec = parseTimeString(document.getElementById(inputId).value);
+            let newSec = currentSec + delta;
+            if (newSec < 0) newSec = 0;
+            document.getElementById(inputId).value = formatTime(newSec);
+        }
+
+        function jumpToStart() {
+            if (!player || typeof player.seekTo !== 'function') return;
+            const startTime = parseTimeString(document.getElementById('startTimeInput').value);
+            player.seekTo(startTime, true);
+            player.playVideo();
+        }
+
+        function applySegment(startSec, endSec, title) {
+            document.getElementById('startTimeInput').value = formatTime(startSec);
+            document.getElementById('endTimeInput').value = formatTime(endSec);
+            if (title) {
+                document.getElementById('segmentTitleInput').value = title;
+            }
+            document.getElementById('loopToggle').checked = true;
+            if (player && typeof player.seekTo === 'function') {
+                player.seekTo(startSec, true);
+                player.playVideo();
+            }
+        }
+
+        function resetLoopCount() {
+            loopCounter = 0;
+            document.getElementById('loopCount').innerText = loopCounter;
+        }
+
+        function changePlaybackRate() {
+            if (!player || typeof player.setPlaybackRate !== 'function') return;
+            const rate = parseFloat(document.getElementById('playbackRate').value);
+            player.setPlaybackRate(rate);
+        }
+
+        // Save current segment to localStorage
+        function saveCurrentSegment() {
+            if (!currentVideoId) {
+                showToast("먼저 영상을 불러주세요.");
+                return;
+            }
+
+            const startStr = document.getElementById('startTimeInput').value;
+            const endStr = document.getElementById('endTimeInput').value;
+            const startSec = parseTimeString(startStr);
+            const endSec = parseTimeString(endStr);
+
+            if (endSec <= startSec) {
+                showToast("종료 시간은 시작 시간보다 커야 합니다.");
+                return;
+            }
+
+            let title = document.getElementById('segmentTitleInput').value.trim();
+            if (!title) {
+                title = `${startStr} ~ ${endStr} 반복 구간`;
+            }
+
+            const segments = getStoredSegments();
+            const newSegment = {
+                id: 'seg_' + Date.now(),
+                videoId: currentVideoId,
+                title: title,
+                start: startSec,
+                end: endSec,
+                createdAt: new Date().toISOString()
+            };
+
+            segments.unshift(newSegment);
+            saveStoredSegments(segments);
+            renderSavedSegments();
+            showToast("구간이 안전하게 저장되었습니다.");
+        }
+
+        // Delete segment
+        function deleteSegment(id, event) {
+            event.stopPropagation();
+            let segments = getStoredSegments();
+            segments = segments.filter(s => s.id !== id);
+            saveStoredSegments(segments);
+            renderSavedSegments();
+            showToast("구간이 삭제되었습니다.");
+        }
+
+        // Filter toggle for saved segments
+        function filterSegments(mode) {
+            activeFilter = mode;
+            const curBtn = document.getElementById('filterCurrentBtn');
+            const allBtn = document.getElementById('filterAllBtn');
+            if (mode === 'current') {
+                curBtn.className = "bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-medium";
+                allBtn.className = "bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors";
+            } else {
+                allBtn.className = "bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-medium";
+                curBtn.className = "bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors";
+            }
+            renderSavedSegments();
+        }
+
+        // Render saved segments list UI
+        function renderSavedSegments() {
+            const container = document.getElementById('savedSegmentsList');
+            let segments = getStoredSegments();
+
+            if (activeFilter === 'current' && currentVideoId) {
+                segments = segments.filter(s => s.videoId === currentVideoId);
+            }
+
+            if (segments.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-8 text-center text-slate-500 text-sm">
+                        ${activeFilter === 'current' && !currentVideoId ? '영상을 불러오면 해당 영상의 저장된 구간을 확인할 수 있습니다.' : '저장된 구간이 없습니다.'}
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = segments.map(seg => `
+                <div onclick="loadVideo('${seg.videoId}', ${seg.start}, ${seg.end}, '${seg.title.replace(/'/g, "\\'")}')" 
+                    class="bg-slate-950/70 border border-slate-800 hover:border-red-500/50 rounded-xl p-3.5 flex flex-col justify-between gap-2.5 cursor-pointer transition-all group">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="font-medium text-sm text-slate-200 group-hover:text-red-400 transition-colors truncate">
+                            <i class="fa-solid fa-play text-xs mr-1.5 text-red-500"></i> ${escapeHtml(seg.title)}
+                        </div>
+                        <button onclick="deleteSegment('${seg.id}', event)" class="text-slate-500 hover:text-red-400 p-1 transition-colors" title="삭제">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-slate-400">
+                        <span class="font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-800">${formatTime(seg.start)} &rarr; ${formatTime(seg.end)}</span>
+                        <span class="text-[10px] text-slate-500">ID: ${seg.videoId}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Export data as JSON file
+        function exportData() {
+            const segments = getStoredSegments();
+            if (segments.length === 0) {
+                showToast("내보낼 저장된 구간 데이터가 없습니다.");
+                return;
+            }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(segments, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `tubeloop_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("백업 파일이 다운로드되었습니다.");
+        }
+
+        // Import data from JSON file
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        const existing = getStoredSegments();
+                        // Merge and deduplicate by id
+                        const map = new Map();
+                        [...imported, ...existing].forEach(item => {
+                            if (item.id && item.videoId) map.set(item.id, item);
+                        });
+                        const merged = Array.from(map.values());
+                        saveStoredSegments(merged);
+                        renderSavedSegments();
+                        showToast(`성공적으로 ${imported.length}개의 구간 데이터를 가져왔습니다.`);
+                    } else {
+                        showToast("올바른 백업 파일 형식이 아닙니다.");
+                    }
+                } catch (err) {
+                    showToast("JSON 파일을 읽는 중 오류가 발생했습니다.");
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        // Toast notification system
+        function showToast(message) {
+            let toast = document.getElementById('custom-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'custom-toast';
+                toast.className = 'fixed bottom-6 right-6 bg-slate-900 border border-slate-700 text-white text-xs px-4 py-3 rounded-xl shadow-2xl z-50 transition-opacity duration-300 opacity-0 pointer-events-none flex items-center space-x-2';
+                toast.innerHTML = '<i class="fa-solid fa-circle-info text-red-500"></i><span id="toast-text"></span>';
+                document.body.appendChild(toast);
+            }
+            document.getElementById('toast-text').innerText = message;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 3000);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // Support Enter key in URL input
+        document.getElementById('videoUrlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loadVideo();
+            }
+        });
+
+        // Initial render
+        renderSavedSegments();
+    </script>
+</body>
+</html>
