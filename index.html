@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>유튜브 구간 반복 플레이어 (소셜 공유 및 저장 기능 포함)</title>
+    <title>유튜브 구간 반복 플레이어 (카카오 공유 및 저장 기능 포함)</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Kakao SDK -->
+    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/5WlChE9IB0Qc16px94fbImmZRxvChMRYf" crossorigin="anonymous"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -34,41 +36,44 @@
             background: rgba(100, 116, 139, 1);
         }
     </style>
-    <!-- KakaoTalk 공유하기 기능 -->
-    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>
+    <!-- KakaoTalk 공유하기 기능 설정 -->
     <script>
-        // 발급받은 JavaScript 키로 초기화
-        Kakao.init('004a5020e10075b2a15807eb778e2f85');
+        document.addEventListener("DOMContentLoaded", function() {
+            try {
+                Kakao.init('004a5020e10075b2a15807eb778e2f85');
+            } catch (e) {}
+        });
 
         function shareKakao() {
-            // 1. 현재 입력된 구간 제목 가져오기 (없으면 기본 이름 사용)
             const segmentTitle = document.getElementById('segmentTitleInput').value.trim() || 'Youtube Loop Player';
-            
-            // 2. 현재 설정된 구간 정보(시작, 종료, 비디오ID)가 포함된 공유 링크 생성
             const shareUrl = getShareUrl(); 
 
-            Kakao.Share.sendDefault({
-                objectType: 'feed',
-                content: {
-                    title: `🎬 ${segmentTitle}`,
-                    description: '유튜브 구간 반복 재생하기',
-                    // 3. 카카오 디벨로퍼스에 등록한 앱 로고 이미지 주소 또는 웹상의 이미지 URL 입력 (필수)
-                    imageUrl: 'https://minjukang727.github.io/youtube-loop-player/tubeloop_kakao_logo.png', 
-                    link: {
-                        mobileWebUrl: shareUrl,
-                        webUrl: shareUrl,
-                    },
-                },
-                buttons: [
-                    {
-                        title: '구간 반복 재생하기',
+            try {
+                Kakao.Share.sendDefault({
+                    objectType: 'feed',
+                    content: {
+                        title: `🎬 ${segmentTitle}`,
+                        description: '유튜브 구간 반복 재생하기',
+                        imageUrl: 'https://minjukang727.github.io/youtube-loop-player/youtube_loop_player.png', 
                         link: {
                             mobileWebUrl: shareUrl,
                             webUrl: shareUrl,
                         },
                     },
-                ],
-            });
+                    buttons: [
+                        {
+                            title: '구간 반복 재생하기',
+                            link: {
+                                mobileWebUrl: shareUrl,
+                                webUrl: shareUrl,
+                            },
+                        },
+                    ],
+                });
+                closeShareModal();
+            } catch (e) {
+                showToast("카카오톡 공유 초기화 오류가 발생했습니다.");
+            }
         }
     </script>
 </head>
@@ -126,9 +131,7 @@
             <!-- Video Player Column (2 span) -->
             <div class="lg:col-span-2 flex flex-col gap-4">
                 <div class="relative w-full aspect-video bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl flex items-center justify-center">
-                    <!-- YouTube Iframe container with Error 153 resilience attributes -->
                     <div id="youtube-player" class="w-full h-full absolute inset-0" referrerpolicy="strict-origin-when-cross-origin"></div>
-                    <!-- Placeholder when no video loaded -->
                     <div id="player-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-500 p-6 text-center">
                         <i class="fa-solid fa-film text-4xl mb-3 text-slate-600"></i>
                         <p class="text-sm font-medium text-slate-400">상단에 유튜브 링크를 입력하고 영상을 불러주세요.</p>
@@ -136,7 +139,6 @@
                     </div>
                 </div>
 
-                <!-- Quick Action Bar under player -->
                 <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
                     <div class="flex items-center space-x-3">
                         <button onclick="togglePlayPause()" id="playPauseBtn" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center transition-colors disabled:opacity-40" disabled>
@@ -148,7 +150,6 @@
                         </div>
                     </div>
 
-                    <!-- Speed Control -->
                     <div class="flex items-center space-x-2">
                         <span class="text-xs text-slate-400">속도:</span>
                         <select id="playbackRate" onchange="changePlaybackRate()" class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-red-500">
@@ -163,7 +164,7 @@
                 </div>
             </div>
 
-            <!-- Loop Controls Column (1 span) -->
+            <!-- Loop Controls Column -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between gap-6 backdrop-blur">
                 <div class="flex flex-col gap-5">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -179,14 +180,12 @@
                         </div>
                     </div>
 
-                    <!-- Title / Memo for loop segment -->
                     <div class="flex flex-col gap-1.5">
                         <label for="segmentTitleInput" class="text-xs font-medium text-slate-300">구간 제목 / 메모</label>
                         <input type="text" id="segmentTitleInput" placeholder="예: 후렴구 안무 연습 1번" 
                             class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500">
                     </div>
 
-                    <!-- Start Time Section -->
                     <div class="flex flex-col gap-2">
                         <div class="flex justify-between items-center text-sm">
                             <span class="text-slate-300 font-medium">시작 시간 (A)</span>
@@ -203,7 +202,6 @@
                         </div>
                     </div>
 
-                    <!-- End Time Section -->
                     <div class="flex flex-col gap-2">
                         <div class="flex justify-between items-center text-sm">
                             <span class="text-slate-300 font-medium">종료 시간 (B)</span>
@@ -220,14 +218,12 @@
                         </div>
                     </div>
 
-                    <!-- Loop Status Info -->
                     <div class="bg-slate-950/60 rounded-xl p-3 border border-slate-800 text-xs text-slate-400 flex justify-between items-center">
                         <span>반복 횟수: <strong id="loopCount" class="text-slate-200 font-mono">0</strong>회</span>
                         <button onclick="resetLoopCount()" class="text-slate-500 hover:text-slate-300 underline">초기화</button>
                     </div>
                 </div>
 
-                <!-- Action Buttons -->
                 <div class="flex flex-col gap-2 pt-2 border-t border-slate-800">
                     <button onclick="saveCurrentSegment()" class="w-full bg-red-600 hover:bg-red-500 text-white font-medium py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-red-600/20 flex items-center justify-center space-x-2">
                         <i class="fa-solid fa-floppy-disk"></i>
@@ -242,7 +238,6 @@
 
         </div>
 
-        <!-- Saved Segments Section -->
         <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4 mb-4">
                 <div>
@@ -258,7 +253,6 @@
             </div>
 
             <div id="savedSegmentsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto pr-1">
-                <!-- Dynamically populated -->
                 <div class="col-span-full py-8 text-center text-slate-500 text-sm">
                     저장된 구간이 없습니다. 구간을 설정하고 '현재 구간 저장하기'를 눌러보세요.
                 </div>
@@ -267,8 +261,7 @@
 
     </main>
 
-    <!-- Share Modal -->
-    <div id="shareModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+    <div id="shareModal" onclick="handleModalOutsideClick(event)" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl transform scale-95 transition-transform duration-300" id="shareModalContent">
             <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
                 <h3 class="text-base font-bold text-white flex items-center gap-2">
@@ -279,35 +272,29 @@
                 </button>
             </div>
             
-            <p class="text-xs text-slate-400 mb-5">현재 설정된 반복 구간과 제목이 포함된 링크를 친구들에게 공유해 보세요.</p>
+            <p class="text-xs text-slate-400 mb-5">현재 설정된 반복 구간과 제목이 포함된 링크를 공유해 보세요.</p>
 
-            <!-- Social Share Buttons Grid -->
             <div class="grid grid-cols-2 gap-3 mb-5">
-                <!-- KakaoTalk -->
                 <button onclick="shareKakao()" class="bg-[#fee500] hover:bg-[#fdd800] text-[#191919] font-medium text-xs py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-colors shadow-md">
                     <i class="fa-solid fa-comment text-sm"></i>
                     <span>카카오톡 공유</span>
                 </button>
-                <!-- Naver Blog / Band -->
                 <button onclick="shareNaver()" class="bg-[#03c75a] hover:bg-[#02b351] text-white font-medium text-xs py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-colors shadow-md">
                     <span class="font-bold text-sm">N</span>
-                    <span>네이버로 공유</span>
+                    <span>네이버</span>
                 </button>
-                <!-- X (Twitter) -->
                 <button onclick="shareTwitter()" class="bg-slate-800 hover:bg-slate-700 text-slate-100 font-medium text-xs py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-colors border border-slate-700">
                     <i class="fa-brands fa-x-twitter text-sm"></i>
                     <span>트위터 (X)</span>
                 </button>
-                <!-- Facebook -->
                 <button onclick="shareFacebook()" class="bg-[#1877f2] hover:bg-[#166fe5] text-white font-medium text-xs py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-colors shadow-md">
                     <i class="fa-brands fa-facebook text-sm"></i>
                     <span>페이스북</span>
                 </button>
             </div>
 
-            <!-- Direct Link Copy Field -->
             <div class="flex flex-col gap-1.5">
-                <label class="text-xs text-slate-400 font-medium">직접 링크 복사</label>
+                <label class="text-xs text-slate-400 font-medium">링크 복사하기</label>
                 <div class="flex gap-2">
                     <input type="text" id="shareUrlInput" readonly class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-300 w-full focus:outline-none select-all font-mono">
                     <button onclick="copyShareUrl()" class="bg-red-600 hover:bg-red-500 text-white text-xs px-4 py-2.5 rounded-xl font-medium shrink-0 transition-colors shadow-lg shadow-red-600/20">
@@ -328,10 +315,9 @@
         let player;
         let currentVideoId = '';
         let loopCounter = 0;
-        let activeFilter = 'current'; // 'current' or 'all'
+        let activeFilter = 'current';
         const STORAGE_KEY = 'tubeloop_saved_segments_v1';
 
-        // Load segments from localStorage
         function getStoredSegments() {
             try {
                 const data = localStorage.getItem(STORAGE_KEY);
@@ -341,7 +327,6 @@
             }
         }
 
-        // Save segments to localStorage
         function saveStoredSegments(segments) {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(segments));
@@ -350,12 +335,10 @@
             }
         }
 
-        // YouTube API Ready callback & URL Parameter Auto-load check
         function onYouTubeIframeAPIReady() {
             checkUrlParametersAndLoad();
         }
 
-        // Extract video ID from URL or return ID if raw
         function extractVideoId(urlOrId) {
             if (!urlOrId) return '';
             urlOrId = urlOrId.trim();
@@ -369,7 +352,6 @@
             return null;
         }
 
-        // Load video into iframe (using youtube-nocookie.com host to prevent Error 153)
         function loadVideo(targetVideoId, startSec, endSec, segmentTitle) {
             const inputVal = targetVideoId || document.getElementById('videoUrlInput').value;
             const videoId = extractVideoId(inputVal);
@@ -444,7 +426,6 @@
             }
         }
 
-        // Time format helpers: seconds <-> MM:SS.ms
         function formatTime(seconds) {
             if (isNaN(seconds) || seconds < 0) return "00:00";
             const mins = Math.floor(seconds / 60);
@@ -466,7 +447,6 @@
             return parseFloat(timeStr) || 0;
         }
 
-        // Monitor video current time and enforce loop
         function startIntervalMonitor() {
             setInterval(() => {
                 if (!player || typeof player.getCurrentTime !== 'function') return;
@@ -490,9 +470,7 @@
                             document.getElementById('loopCount').innerText = loopCounter;
                         }
                     }
-                } catch (e) {
-                    // Ignore cross-frame errors
-                }
+                } catch (e) {}
             }, 100);
         }
 
@@ -547,7 +525,6 @@
             player.setPlaybackRate(rate);
         }
 
-        // Save current segment to localStorage
         function saveCurrentSegment() {
             if (!currentVideoId) {
                 showToast("먼저 영상을 불러주세요.");
@@ -585,7 +562,6 @@
             showToast("구간이 안전하게 저장되었습니다.");
         }
 
-        // Delete segment
         function deleteSegment(id, event) {
             event.stopPropagation();
             let segments = getStoredSegments();
@@ -595,7 +571,6 @@
             showToast("구간이 삭제되었습니다.");
         }
 
-        // Filter toggle for saved segments
         function filterSegments(mode) {
             activeFilter = mode;
             const curBtn = document.getElementById('filterCurrentBtn');
@@ -610,7 +585,6 @@
             renderSavedSegments();
         }
 
-        // Render saved segments list UI
         function renderSavedSegments() {
             const container = document.getElementById('savedSegmentsList');
             let segments = getStoredSegments();
@@ -647,7 +621,6 @@
             `).join('');
         }
 
-        // Generate Share URL Helper
         function getShareUrl() {
             if (!currentVideoId) return '';
             const startSec = parseTimeString(document.getElementById('startTimeInput').value);
@@ -658,7 +631,6 @@
             return `${baseUrl}?v=${currentVideoId}&start=${startSec}&end=${endSec}&title=${encodeURIComponent(title)}`;
         }
 
-        // Open Share Modal
         function openShareModal() {
             if (!currentVideoId) {
                 showToast("먼저 영상을 불러주세요.");
@@ -676,7 +648,6 @@
             }, 10);
         }
 
-        // Close Share Modal
         function closeShareModal() {
             const modal = document.getElementById('shareModal');
             modal.classList.add('opacity-0');
@@ -687,7 +658,13 @@
             }, 300);
         }
 
-        // Copy Share URL
+        function handleModalOutsideClick(event) {
+            const modalContent = document.getElementById('shareModalContent');
+            if (!modalContent.contains(event.target)) {
+                closeShareModal();
+            }
+        }
+
         function copyShareUrl() {
             const input = document.getElementById('shareUrlInput');
             navigator.clipboard.writeText(input.value).then(() => {
@@ -696,25 +673,6 @@
             }).catch(() => {
                 showToast("링크 복사에 실패했습니다.");
             });
-        }
-
-        // Social Share Handlers (Safe Fallback)
-        function shareKakao() {
-            const url = getShareUrl();
-            const title = document.getElementById('segmentTitleInput').value.trim() || '유튜브 구간 반복 플레이어';
-            
-            if (navigator.share) {
-                navigator.share({
-                    title: 'TubeLoop Pro 구간 공유',
-                    text: `[${title}] 유튜브 구간 반복 링크입니다.`,
-                    url: url,
-                }).catch(() => {});
-            } else {
-                navigator.clipboard.writeText(url).then(() => {
-                    showToast("카카오톡 공유 링크가 복사되었습니다! 채팅창에 붙여넣기 하세요.");
-                    closeShareModal();
-                });
-            }
         }
 
         function shareNaver() {
@@ -740,7 +698,6 @@
             closeShareModal();
         }
 
-        // Check URL parameters on load and auto-play segment if available
         function checkUrlParametersAndLoad() {
             const urlParams = new URLSearchParams(window.location.search);
             const v = urlParams.get('v');
@@ -755,7 +712,6 @@
             }
         }
 
-        // Export data as JSON file
         function exportData() {
             const segments = getStoredSegments();
             if (segments.length === 0) {
@@ -772,7 +728,6 @@
             showToast("백업 파일이 다운로드되었습니다.");
         }
 
-        // Import data from JSON file
         function importData(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -801,7 +756,6 @@
             reader.readAsText(file);
         }
 
-        // Toast notification system
         function showToast(message) {
             let toast = document.getElementById('custom-toast');
             if (!toast) {
@@ -824,14 +778,12 @@
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // Support Enter key in URL input
         document.getElementById('videoUrlInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 loadVideo();
             }
         });
 
-        // Initial render
         renderSavedSegments();
     </script>
 </body>
