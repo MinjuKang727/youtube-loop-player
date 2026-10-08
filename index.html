@@ -34,6 +34,43 @@
             background: rgba(100, 116, 139, 1);
         }
     </style>
+    <!-- KakaoTalk 공유하기 기능 -->
+    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>
+    <script>
+        // 발급받은 JavaScript 키로 초기화
+        Kakao.init('004a5020e10075b2a15807eb778e2f85');
+
+        function shareKakao() {
+            // 1. 현재 입력된 구간 제목 가져오기 (없으면 기본 이름 사용)
+            const segmentTitle = document.getElementById('segmentTitleInput').value.trim() || 'Youtube Loop Player';
+            
+            // 2. 현재 설정된 구간 정보(시작, 종료, 비디오ID)가 포함된 공유 링크 생성
+            const shareUrl = getShareUrl(); 
+
+            Kakao.Share.sendDefault({
+                objectType: 'feed',
+                content: {
+                    title: `🎬 ${segmentTitle}`,
+                    description: '유튜브 구간 반복 재생하기',
+                    // 3. 카카오 디벨로퍼스에 등록한 앱 로고 이미지 주소 또는 웹상의 이미지 URL 입력 (필수)
+                    imageUrl: 'https://minjukang727.github.io/youtube-loop-player/tubeloop_kakao_logo.png', 
+                    link: {
+                        mobileWebUrl: shareUrl,
+                        webUrl: shareUrl,
+                    },
+                },
+                buttons: [
+                    {
+                        title: '구간 반복 재생하기',
+                        link: {
+                            mobileWebUrl: shareUrl,
+                            webUrl: shareUrl,
+                        },
+                    },
+                ],
+            });
+        }
+    </script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-red-500 selection:text-white">
 
