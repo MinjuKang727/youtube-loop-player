@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>유튜브 구간 반복 플레이어 (구간 저장 기능 포함)</title>
+    <title>유튜브 구간 반복 플레이어 (소셜 공유 및 저장 기능 포함)</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts Inter -->
@@ -45,10 +45,14 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold tracking-tight text-white">TubeLoop Pro</h1>
-                    <p class="text-xs text-slate-400">구간 반복 및 구간 설정 저장 플레이어</p>
+                    <p class="text-xs text-slate-400">구간 반복 및 소셜 공유 플레이어</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2">
+                <button onclick="openShareModal()" title="구간 공유하기" class="bg-red-600 hover:bg-red-500 text-white text-xs px-3.5 py-2 rounded-xl shadow-lg shadow-red-600/20 flex items-center space-x-1.5 transition-colors font-medium">
+                    <i class="fa-solid fa-share-nodes"></i>
+                    <span class="hidden sm:inline">구간 공유하기</span>
+                </button>
                 <button onclick="exportData()" title="저장된 목록 백업 (JSON)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-xl border border-slate-700 flex items-center space-x-1.5 transition-colors">
                     <i class="fa-solid fa-download"></i>
                     <span class="hidden sm:inline">내보내기</span>
@@ -226,8 +230,59 @@
 
     </main>
 
+    <!-- Share Modal -->
+    <div id="shareModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl transform scale-95 transition-transform duration-300" id="shareModalContent">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-share-nodes text-red-500"></i> 구간 링크 공유하기
+                </h3>
+                <button onclick="closeShareModal()" class="text-slate-400 hover:text-white p-1 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <p class="text-xs text-slate-400 mb-5">현재 설정된 반복 구간과 제목이 포함된 링크를 친구들에게 공유해 보세요.</p>
+
+            <!-- Social Share Buttons Grid -->
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                <!-- KakaoTalk -->
+                <button onclick="shareKakao()" class="bg-[#fee500] hover:bg-[#fdd800] text-[#191919] font-medium text-xs py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-colors shadow-md">
+                    <i class="fa-solid fa-comment text-sm"></i>
+                    <span>카카오톡 공유</span>
+                </button>
+                <!-- Naver Blog / Band -->
+                <button onclick="shareNaver()" class="bg-[#03c75a] hover:bg-[#02b351] text-white font-medium text-xs py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-colors shadow-md">
+                    <span class="font-bold text-sm">N</span>
+                    <span>네이버로 공유</span>
+                </button>
+                <!-- X (Twitter) -->
+                <button onclick="shareTwitter()" class="bg-slate-800 hover:bg-slate-700 text-slate-100 font-medium text-xs py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-colors border border-slate-700">
+                    <i class="fa-brands fa-x-twitter text-sm"></i>
+                    <span>트위터 (X)</span>
+                </button>
+                <!-- Facebook -->
+                <button onclick="shareFacebook()" class="bg-[#1877f2] hover:bg-[#166fe5] text-white font-medium text-xs py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-colors shadow-md">
+                    <i class="fa-brands fa-facebook text-sm"></i>
+                    <span>페이스북</span>
+                </button>
+            </div>
+
+            <!-- Direct Link Copy Field -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs text-slate-400 font-medium">직접 링크 복사</label>
+                <div class="flex gap-2">
+                    <input type="text" id="shareUrlInput" readonly class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-300 w-full focus:outline-none select-all font-mono">
+                    <button onclick="copyShareUrl()" class="bg-red-600 hover:bg-red-500 text-white text-xs px-4 py-2.5 rounded-xl font-medium shrink-0 transition-colors shadow-lg shadow-red-600/20">
+                        복사
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="w-full border-t border-slate-800 py-6 mt-12 bg-slate-900/30 text-center text-xs text-slate-500">
-        <p>TubeLoop Pro &mdash; 유튜브 구간 반복 & 브라우저 자동 저장 플레이어</p>
+        <p>TubeLoop Pro &mdash; 유튜브 구간 반복 & 소셜 공유 플레이어</p>
     </footer>
 
     <!-- YouTube IFrame API -->
@@ -258,9 +313,9 @@
             }
         }
 
-        // YouTube API Ready callback
+        // YouTube API Ready callback & URL Parameter Auto-load check
         function onYouTubeIframeAPIReady() {
-            // Ready
+            checkUrlParametersAndLoad();
         }
 
         // Extract video ID from URL or return ID if raw
@@ -555,6 +610,114 @@
             `).join('');
         }
 
+        // Generate Share URL Helper
+        function getShareUrl() {
+            if (!currentVideoId) return '';
+            const startSec = parseTimeString(document.getElementById('startTimeInput').value);
+            const endSec = parseTimeString(document.getElementById('endTimeInput').value);
+            const title = document.getElementById('segmentTitleInput').value.trim() || '구간 반복';
+
+            const baseUrl = window.location.origin + window.location.pathname;
+            return `${baseUrl}?v=${currentVideoId}&start=${startSec}&end=${endSec}&title=${encodeURIComponent(title)}`;
+        }
+
+        // Open Share Modal
+        function openShareModal() {
+            if (!currentVideoId) {
+                showToast("먼저 영상을 불러주세요.");
+                return;
+            }
+            const url = getShareUrl();
+            document.getElementById('shareUrlInput').value = url;
+            
+            const modal = document.getElementById('shareModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('#shareModalContent').classList.remove('scale-95');
+                modal.querySelector('#shareModalContent').classList.add('scale-100');
+            }, 10);
+        }
+
+        // Close Share Modal
+        function closeShareModal() {
+            const modal = document.getElementById('shareModal');
+            modal.classList.add('opacity-0');
+            modal.querySelector('#shareModalContent').classList.remove('scale-100');
+            modal.querySelector('#shareModalContent').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // Copy Share URL
+        function copyShareUrl() {
+            const input = document.getElementById('shareUrlInput');
+            navigator.clipboard.writeText(input.value).then(() => {
+                showToast("링크가 클립보드에 복사되었습니다!");
+                closeShareModal();
+            }).catch(() => {
+                showToast("링크 복사에 실패했습니다.");
+            });
+        }
+
+        // Social Share Handlers (Safe Fallback)
+        function shareKakao() {
+            const url = getShareUrl();
+            const title = document.getElementById('segmentTitleInput').value.trim() || '유튜브 구간 반복 플레이어';
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'TubeLoop Pro 구간 공유',
+                    text: `[${title}] 유튜브 구간 반복 링크입니다.`,
+                    url: url,
+                }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(url).then(() => {
+                    showToast("카카오톡 공유 링크가 복사되었습니다! 채팅창에 붙여넣기 하세요.");
+                    closeShareModal();
+                });
+            }
+        }
+
+        function shareNaver() {
+            const url = encodeURIComponent(getShareUrl());
+            const title = encodeURIComponent(document.getElementById('segmentTitleInput').value.trim() || '유튜브 구간 반복');
+            const naverUrl = `https://share.naver.com/web/shareView.nhn?url=${url}&title=${title}`;
+            window.open(naverUrl, '_blank', 'width=600,height=500');
+            closeShareModal();
+        }
+
+        function shareTwitter() {
+            const url = encodeURIComponent(getShareUrl());
+            const text = encodeURIComponent(`[유튜브 구간 반복] ${document.getElementById('segmentTitleInput').value.trim() || '구간 공유'}\n`);
+            const twitterUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
+            window.open(twitterUrl, '_blank', 'width=600,height=500');
+            closeShareModal();
+        }
+
+        function shareFacebook() {
+            const url = encodeURIComponent(getShareUrl());
+            const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+            window.open(fbUrl, '_blank', 'width=600,height=500');
+            closeShareModal();
+        }
+
+        // Check URL parameters on load and auto-play segment if available
+        function checkUrlParametersAndLoad() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const v = urlParams.get('v');
+            const start = urlParams.get('start');
+            const end = urlParams.get('end');
+            const title = urlParams.get('title');
+
+            if (v) {
+                const startSec = start !== null ? parseFloat(start) : 0;
+                const endSec = end !== null ? parseFloat(end) : 10;
+                loadVideo(v, startSec, endSec, title ? decodeURIComponent(title) : '');
+            }
+        }
+
         // Export data as JSON file
         function exportData() {
             const segments = getStoredSegments();
@@ -582,7 +745,6 @@
                     const imported = JSON.parse(e.target.result);
                     if (Array.isArray(imported)) {
                         const existing = getStoredSegments();
-                        // Merge and deduplicate by id
                         const map = new Map();
                         [...imported, ...existing].forEach(item => {
                             if (item.id && item.videoId) map.set(item.id, item);
