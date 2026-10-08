@@ -25,4 +25,4 @@
 
 ---
 
-👉 [**Youtube Loop Player 페이지로 이동**]()
+👉 [**Youtube Loop Player 페이지로 이동**](https://minjukang727.github.io/youtube-loop-player/)
