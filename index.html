@@ -60,14 +60,6 @@
             return `${padMins}:${padSecs}`;
         }
 
-        // // 초 단위를 'X분 Y초' 형식으로 변환하는 도우미 함수
-        // function formatKoreanTime(seconds) {
-        //     if (isNaN(seconds) || seconds < 0) return "0분 0초";
-        //     const mins = Math.floor(seconds / 60);
-        //     const secs = Math.floor(seconds % 60);
-        //     return `${mins}분 ${secs}초`;
-        // }
-
         async function shareKakao() {
             const shareUrl = getShareUrl();
             const customTitle = document.getElementById('segmentTitleInput').value.trim();
@@ -77,16 +69,13 @@
             const startSec = parseTimeString(document.getElementById('startTimeInput').value);
             const endSec = parseTimeString(document.getElementById('endTimeInput').value);
             
-            // 설명 기본값 설정: "00:00.0 ~ 00:00.0 무한 구간 반복" 형식 적용
             const defaultDesc = `반복 구간: ${formatTime(startSec)} ~ ${formatTime(endSec)}`;
             const finalDesc = customDesc || defaultDesc;
 
-            // 썸네일: 현재 비디오 ID가 있으면 유튜브 썸네일, 없으면 기본 앱 로고 사용
             const thumbnailImageUrl = currentVideoId 
                 ? `https://img.youtube.com/vi/${currentVideoId}/hqdefault.jpg` 
                 : 'https://minjukang727.github.io/youtube-loop-player/youtube_loop_player.png';
 
-            // 타이틀: 입력된 값이 없으면 placeholder(유튜브 제목) 또는 기본값 사용
             let finalTitle = customTitle;
             if (!finalTitle) {
                 if (placeholderDefault && placeholderDefault.startsWith('유튜브 제목:')) {
@@ -533,7 +522,6 @@
 
                     document.getElementById('currentTimeDisplay').innerText = `${formatTime(currentTime)} / ${formatTime(duration)}`;
 
-                    // 설명 입력창 placeholder를 00:00.0 형식으로 실시간 업데이트
                     const startSec = parseTimeString(document.getElementById('startTimeInput').value);
                     const endSec = parseTimeString(document.getElementById('endTimeInput').value);
                     const descInput = document.getElementById('segmentDescInput');
@@ -818,48 +806,74 @@
             }
         }
 
-    function exportData() {
-        const segments = getStoredSegments();
-        if (segments.length === 0) {
-            showToast("내보낼 저장된 구간 데이터가 없습니다.");
-            return;
-        }
-
-        // 1. 현재 입력창의 타이틀 가져오기 (없으면 유튜브 플레이스홀더 또는 기본값 활용)
-        let currentTitle = document.getElementById('segmentTitleInput').value.trim();
-        if (!currentTitle) {
-            const placeholder = document.getElementById('segmentTitleInput').placeholder;
-            if (placeholder && placeholder.startsWith('유튜브 제목:')) {
-                currentTitle = placeholder.replace('유튜브 제목: ', '');
-            } else {
-                currentTitle = 'youtubeloop_segment';
+        // 백업 내보내기 함수 (수정 완료)
+        function exportData() {
+            const segments = getStoredSegments();
+            if (segments.length === 0) {
+                showToast("내보낼 저장된 구간 데이터가 없습니다.");
+                return;
             }
-        }
 
-        // 2. 파일명에 사용할 수 없는 특수문자 제거 또는 대체 (Windows/Mac 파일명 안전 처리)
-        const safeTitle = currentTitle.replace(/[\/\\?%*:|"<>]/g, '_');
-        if (safeTitle.length > 15) {
-            safeTitle = safeTitle.substring(0, 15) + "..."; // 파일명 길이 제한
-        }
+            let currentTitle = document.getElementById('segmentTitleInput').value.trim();
+            if (!currentTitle) {
+                const placeholder = document.getElementById('segmentTitleInput').placeholder;
+                if (placeholder && placeholder.startsWith('유튜브 제목:')) {
+                    currentTitle = placeholder.replace('유튜브 제목: ', '');
+                } else {
+                    currentTitle = 'youtubeloop_segment';
+                }
+            }
 
-        // 3. 현재 설정된 시작 시간과 종료 시간 가져오기 (예: 01:23.5)
-        const startStr = document.getElementById('startTimeInput').value.trim();
-        const endStr = document.getElementById('endTimeInput').value.trim();
-        const safeStart = startStr.replace(/[:]/g, '').replace(/\./g, ''); // 콜론(:), 마침표(.)을 없애기
-        const safeEnd = endStr.replace(/[:]/g, '').replace(/\./g, '');
+            let safeTitle = currentTitle.replace(/[\/\\?%*:|"<>]/g, '_');
+            if (safeTitle.length > 15) {
+                safeTitle = safeTitle.substring(0, 15) + "..";
+            }
 
-        // 4. 최종 파일명 조합 (예: "[YLP Setting] 영상제목_00000~00000.json")
-        const fileName = `[YLP Setting] ${safeTitle}_${safeStart}~${safeEnd}.json`;
+            const startStr = document.getElementById('startTimeInput').value.trim();
+            const endStr = document.getElementById('endTimeInput').value.trim();
+            const safeStart = startStr.replace(/[:]/g, '').replace(/\./g, '');
+            const safeEnd = endStr.replace(/[:]/g, '').replace(/\./g, '');
+
+            const fileName = `[YLP Setting] ${safeTitle}_${safeStart}~${safeEnd}.json`;
  
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(segments, null, 2));
-        const downloadAnchor = document.createElement('a');
-        downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", fileName);
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
-        downloadAnchor.remove();
-        showToast("백업 파일이 다운로드되었습니다.");
-    }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(segments, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", fileName);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("백업 파일이 다운로드되었습니다.");
+        }
+
+        // 백업 파일 불러오기(가져오기) 함수 추가 완료
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        const existing = getStoredSegments();
+                        const map = new Map();
+                        [...imported, ...existing].forEach(item => {
+                            if (item.id && item.videoId) map.set(item.id, item);
+                        });
+                        const merged = Array.from(map.values());
+                        saveStoredSegments(merged);
+                        renderSavedSegments();
+                        showToast(`성공적으로 ${imported.length}개의 구간 데이터를 가져왔습니다.`);
+                    } else {
+                        showToast("올바른 백업 파일 형식이 아닙니다.");
+                    }
+                } catch (err) {
+                    showToast("JSON 파일을 읽는 중 오류가 발생했습니다.");
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
 
         function showToast(message) {
             let toast = document.getElementById('custom-toast');
