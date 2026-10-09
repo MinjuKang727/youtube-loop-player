@@ -73,7 +73,7 @@
             const endSec = parseTimeString(document.getElementById('endTimeInput').value);
             
             // 설명 기본값 설정: "00:00.0 ~ 00:00.0 무한 구간 반복" 형식 적용
-            const defaultDesc = `${formatTime(startSec)} ~ ${formatTime(endSec)} 무한 구간 반복`;
+            const defaultDesc = `반복 구간: ${formatTime(startSec)} ~ ${formatTime(endSec)}`;
             const finalDesc = customDesc || defaultDesc;
 
             // 썸네일: 현재 비디오 ID가 있으면 유튜브 썸네일, 없으면 기본 앱 로고 사용
