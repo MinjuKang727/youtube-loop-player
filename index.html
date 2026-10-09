@@ -4,53 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Youtube Loop Player(유튜브 구간 반복 재생기)</title>
-    <!-- 소셜 공유 미리보기 설정 (Open Graph) -->
     <meta property="og:title" content="유튜브 구간 반복 재생기">
     <meta property="og:description" content="원하는 구간을 무한 반복 재생하고 링크로 쉽게 공유할 수 있는 웹페이지입니다.">
     <meta property="og:image" content="https://minjukang727.github.io/youtube-loop-player/youtube_loop_player.png">
     <meta property="og:url" content="https://minjukang727.github.io/youtube-loop-player/">
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Kakao SDK -->
     <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        input[type=range] {
-            accent-color: #ef4444;
-        }
-        /* Custom scrollbar for saved loops list */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(51, 65, 85, 0.8);
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(100, 116, 139, 1);
-        }
+        body { font-family: 'Inter', sans-serif; }
+        input[type=range] { accent-color: #ef4444; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 1); }
     </style>
     <link rel="icon" href="https://github.com/MinjuKang727/youtube-loop-player/blob/36146323e74392efbc406a614b5bc7435dd9c658/favicon.ico?raw=true" type="image/x-icon">
-    <!-- KakaoTalk 공유하기 기능 설정 -->
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            try {
-                Kakao.init('004a5020e10075b2a15807eb778e2f85');
-            } catch (e) {}
+            try { Kakao.init('004a5020e10075b2a15807eb778e2f85'); } catch (e) {}
         });
 
-        // 초 단위를 '00:00.0' 형식으로 변환하는 함수
         function formatTime(seconds) {
             if (isNaN(seconds) || seconds < 0) return "00:00.0";
             const mins = Math.floor(seconds / 60);
@@ -64,14 +39,12 @@
             const shareUrl = getShareUrl();
             const customTitle = document.getElementById('segmentTitleInput').value.trim();
             const placeholderDefault = document.getElementById('segmentTitleInput').placeholder;
-            
             const customDesc = document.getElementById('segmentDescInput').value.trim();
             const startSec = parseTimeString(document.getElementById('startTimeInput').value);
             const endSec = parseTimeString(document.getElementById('endTimeInput').value);
             
             const defaultDesc = `반복 구간: ${formatTime(startSec)} ~ ${formatTime(endSec)}`;
             const finalDesc = customDesc || defaultDesc;
-
             const thumbnailImageUrl = currentVideoId 
                 ? `https://img.youtube.com/vi/${currentVideoId}/hqdefault.jpg` 
                 : 'https://minjukang727.github.io/youtube-loop-player/youtube_loop_player.png';
@@ -91,9 +64,7 @@
                 }
             }
 
-            if (!finalTitle) {
-                finalTitle = 'Youtube Loop Player - 유튜브 구간 반복 재생기';
-            }
+            if (!finalTitle) finalTitle = 'Youtube Loop Player - 유튜브 구간 반복 재생기';
 
             try {
                 Kakao.Share.sendDefault({
@@ -102,20 +73,9 @@
                         title: `🎬 ${finalTitle}`,
                         description: finalDesc,
                         imageUrl: thumbnailImageUrl,
-                        link: {
-                            mobileWebUrl: shareUrl,
-                            webUrl: shareUrl,
-                        },
+                        link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
                     },
-                    buttons: [
-                        {
-                            title: '구간 반복 재생하기',
-                            link: {
-                                mobileWebUrl: shareUrl,
-                                webUrl: shareUrl,
-                            },
-                        },
-                    ],
+                    buttons: [{ title: '구간 반복 재생하기', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }],
                 });
                 closeShareModal();
             } catch (e) {
@@ -125,7 +85,6 @@
     </script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-red-500 selection:text-white">
-
     <header class="w-full border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-50">
         <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
             <div class="flex items-center space-x-3">
@@ -156,8 +115,6 @@
     </header>
 
     <main class="max-w-6xl w-full mx-auto px-4 py-8 flex-grow flex flex-col gap-8">
-        
-        <!-- URL Input Card -->
         <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur">
             <label for="videoUrlInput" class="block text-sm font-medium text-slate-300 mb-2">
                 <i class="fa-brands fa-youtube text-red-500 mr-1.5"></i> 유튜브 영상 주소 (URL 또는 비디오 ID)
@@ -172,17 +129,13 @@
             </div>
         </div>
 
-        <!-- Player & Controls Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <!-- Video Player Column (2 span) -->
             <div class="lg:col-span-2 flex flex-col gap-4">
                 <div class="relative w-full aspect-video bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl flex items-center justify-center">
                     <div id="youtube-player" class="w-full h-full absolute inset-0" referrerpolicy="strict-origin-when-cross-origin"></div>
                     <div id="player-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-500 p-6 text-center">
                         <i class="fa-solid fa-film text-4xl mb-3 text-slate-600"></i>
                         <p class="text-sm font-medium text-slate-400">상단에 유튜브 링크를 입력하고 영상을 불러주세요.</p>
-                        <p class="text-xs text-slate-500 mt-1">youtube-nocookie.com 및 보안 헤더가 적용되어 있습니다.</p>
                     </div>
                 </div>
 
@@ -211,7 +164,6 @@
                 </div>
             </div>
 
-            <!-- Loop Controls Column -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between gap-6 backdrop-blur">
                 <div class="flex flex-col gap-4">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -227,14 +179,12 @@
                         </div>
                     </div>
 
-                    <!-- Title Input -->
                     <div class="flex flex-col gap-1.5">
                         <label for="segmentTitleInput" class="text-xs font-medium text-slate-300">구간 제목 / 메모</label>
                         <input type="text" id="segmentTitleInput" placeholder="기본값: 유튜브 제목" 
                             class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500">
                     </div>
 
-                    <!-- Description Input -->
                     <div class="flex flex-col gap-1.5">
                         <label for="segmentDescInput" class="text-xs font-medium text-slate-300">공유 설명 (Description)</label>
                         <input type="text" id="segmentDescInput" placeholder="기본값: 00:00.0 ~ 00:10.0 무한 구간 반복" 
@@ -290,7 +240,6 @@
                     </button>
                 </div>
             </div>
-
         </div>
 
         <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur">
@@ -313,7 +262,6 @@
                 </div>
             </div>
         </div>
-
     </main>
 
     <div id="shareModal" onclick="handleModalOutsideClick(event)" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
@@ -364,7 +312,6 @@
         <p>Youtube Loop Player &mdash; 유튜브 구간 반복 재생기(SNS 공유 기능 지원)</p>
     </footer>
 
-    <!-- YouTube IFrame API -->
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
         let player;
@@ -377,45 +324,34 @@
             try {
                 const data = localStorage.getItem(STORAGE_KEY);
                 return data ? JSON.parse(data) : [];
-            } catch (e) {
-                return [];
-            }
+            } catch (e) { return []; }
         }
 
         function saveStoredSegments(segments) {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(segments));
-            } catch (e) {
-                showToast("저장 공간이 부족하거나 오류가 발생했습니다.");
-            }
+            } catch (e) { showToast("저장 공간이 부족하거나 오류가 발생했습니다."); }
         }
 
-        function onYouTubeIframeAPIReady() {
-            checkUrlParametersAndLoad();
-        }
+        function onYouTubeIframeAPIReady() { checkUrlParametersAndLoad(); }
 
         function extractVideoId(urlOrId) {
             if (!urlOrId) return '';
             urlOrId = urlOrId.trim();
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             const match = urlOrId.match(regExp);
-            if (match && match[2].length === 11) {
-                return match[2];
-            } else if (urlOrId.length === 11) {
-                return urlOrId;
-            }
+            if (match && match[2].length === 11) return match[2];
+            else if (urlOrId.length === 11) return urlOrId;
             return null;
         }
 
         async function loadVideo(targetVideoId, startSec, endSec, segmentTitle) {
             const inputVal = targetVideoId || document.getElementById('videoUrlInput').value;
             const videoId = extractVideoId(inputVal);
-
             if (!videoId) {
                 showToast("유효한 유튜브 URL 또는 비디오 ID를 입력해주세요.");
                 return;
             }
-
             currentVideoId = videoId;
             if (!targetVideoId) {
                 document.getElementById('videoUrlInput').value = `https://www.youtube.com/watch?v=${videoId}`;
@@ -435,16 +371,9 @@
 
             if (!player) {
                 player = new YT.Player('youtube-player', {
-                    height: '100%',
-                    width: '100%',
-                    videoId: videoId,
+                    height: '100%', width: '100%', videoId: videoId,
                     host: 'https://www.youtube-nocookie.com',
-                    playerVars: {
-                        'playsinline': 1,
-                        'autoplay': 1,
-                        'controls': 1,
-                        'rel': 0
-                    },
+                    playerVars: { 'playsinline': 1, 'autoplay': 1, 'controls': 1, 'rel': 0 },
                     events: {
                         'onReady': (event) => {
                             onPlayerReady(event);
@@ -458,12 +387,9 @@
             } else {
                 player.loadVideoById(videoId);
                 if (startSec !== undefined && endSec !== undefined) {
-                    setTimeout(() => {
-                        applySegment(startSec, endSec, segmentTitle);
-                    }, 500);
+                    setTimeout(() => { applySegment(startSec, endSec, segmentTitle); }, 500);
                 }
             }
-
             renderSavedSegments();
         }
 
@@ -474,30 +400,20 @@
 
         function onPlayerStateChange(event) {
             const icon = document.getElementById('playPauseIcon');
-            if (event.data == YT.PlayerState.PLAYING) {
-                icon.className = "fa-solid fa-pause";
-            } else {
-                icon.className = "fa-solid fa-play";
-            }
+            icon.className = event.data == YT.PlayerState.PLAYING ? "fa-solid fa-pause" : "fa-solid fa-play";
         }
 
         function togglePlayPause() {
             if (!player || typeof player.getPlayerState !== 'function') return;
-            const state = player.getPlayerState();
-            if (state == YT.PlayerState.PLAYING) {
-                player.pauseVideo();
-            } else {
-                player.playVideo();
-            }
+            if (player.getPlayerState() == YT.PlayerState.PLAYING) player.pauseVideo();
+            else player.playVideo();
         }
 
         function formatTime(seconds) {
             if (isNaN(seconds) || seconds < 0) return "00:00.0";
             const mins = Math.floor(seconds / 60);
             const secs = (seconds % 60).toFixed(1);
-            const padMins = mins < 10 ? '0' + mins : mins;
-            const padSecs = secs < 10 ? '0' + secs : secs;
-            return `${padMins}:${padSecs}`;
+            return `${mins < 10 ? '0' + mins : mins}:${secs < 10 ? '0' + secs : secs}`;
         }
 
         function parseTimeString(timeStr) {
@@ -505,9 +421,7 @@
             timeStr = timeStr.toString().trim();
             if (timeStr.includes(':')) {
                 const parts = timeStr.split(':');
-                const mins = parseFloat(parts[0]) || 0;
-                const secs = parseFloat(parts[1]) || 0;
-                return mins * 60 + secs;
+                return (parseFloat(parts[0]) || 0) * 60 + (parseFloat(parts[1]) || 0);
             }
             return parseFloat(timeStr) || 0;
         }
@@ -515,11 +429,9 @@
         function startIntervalMonitor() {
             setInterval(() => {
                 if (!player || typeof player.getCurrentTime !== 'function') return;
-                
                 try {
                     const currentTime = player.getCurrentTime();
                     const duration = player.getDuration() || 0;
-
                     document.getElementById('currentTimeDisplay').innerText = `${formatTime(currentTime)} / ${formatTime(duration)}`;
 
                     const startSec = parseTimeString(document.getElementById('startTimeInput').value);
@@ -529,10 +441,7 @@
                         descInput.placeholder = `기본값: ${formatTime(startSec)} ~ ${formatTime(endSec)} 무한 구간 반복`;
                     }
 
-                    const isLoopEnabled = document.getElementById('loopToggle').checked;
-                    if (!isLoopEnabled) return;
-
-                    if (endSec > startSec && endSec > 0) {
+                    if (document.getElementById('loopToggle').checked && endSec > startSec && endSec > 0) {
                         if (currentTime >= endSec - 0.05) {
                             player.seekTo(startSec, true);
                             loopCounter++;
@@ -545,37 +454,31 @@
 
         function setStartTimeCurrent() {
             if (!player || typeof player.getCurrentTime !== 'function') return;
-            const t = player.getCurrentTime();
-            document.getElementById('startTimeInput').value = formatTime(t);
+            document.getElementById('startTimeInput').value = formatTime(player.getCurrentTime());
         }
 
         function setEndTimeCurrent() {
             if (!player || typeof player.getCurrentTime !== 'function') return;
-            const t = player.getCurrentTime();
-            document.getElementById('endTimeInput').value = formatTime(t);
+            document.getElementById('endTimeInput').value = formatTime(player.getCurrentTime());
         }
 
         function adjustTime(type, delta) {
             const inputId = type === 'start' ? 'startTimeInput' : 'endTimeInput';
-            const currentSec = parseTimeString(document.getElementById(inputId).value);
-            let newSec = currentSec + delta;
+            let newSec = parseTimeString(document.getElementById(inputId).value) + delta;
             if (newSec < 0) newSec = 0;
             document.getElementById(inputId).value = formatTime(newSec);
         }
 
         function jumpToStart() {
             if (!player || typeof player.seekTo !== 'function') return;
-            const startTime = parseTimeString(document.getElementById('startTimeInput').value);
-            player.seekTo(startTime, true);
+            player.seekTo(parseTimeString(document.getElementById('startTimeInput').value), true);
             player.playVideo();
         }
 
         function applySegment(startSec, endSec, title) {
             document.getElementById('startTimeInput').value = formatTime(startSec);
             document.getElementById('endTimeInput').value = formatTime(endSec);
-            if (title) {
-                document.getElementById('segmentTitleInput').value = title;
-            }
+            if (title) document.getElementById('segmentTitleInput').value = title;
             document.getElementById('loopToggle').checked = true;
             if (player && typeof player.seekTo === 'function') {
                 player.seekTo(startSec, true);
@@ -583,15 +486,11 @@
             }
         }
 
-        function resetLoopCount() {
-            loopCounter = 0;
-            document.getElementById('loopCount').innerText = loopCounter;
-        }
+        function resetLoopCount() { loopCounter = 0; document.getElementById('loopCount').innerText = loopCounter; }
 
         function changePlaybackRate() {
             if (!player || typeof player.setPlaybackRate !== 'function') return;
-            const rate = parseFloat(document.getElementById('playbackRate').value);
-            player.setPlaybackRate(rate);
+            player.setPlaybackRate(parseFloat(document.getElementById('playbackRate').value));
         }
 
         function saveCurrentSegment() {
@@ -599,12 +498,8 @@
                 showToast("먼저 영상을 불러주세요.");
                 return;
             }
-
-            const startStr = document.getElementById('startTimeInput').value;
-            const endStr = document.getElementById('endTimeInput').value;
-            const startSec = parseTimeString(startStr);
-            const endSec = parseTimeString(endStr);
-
+            const startSec = parseTimeString(document.getElementById('startTimeInput').value);
+            const endSec = parseTimeString(document.getElementById('endTimeInput').value);
             if (endSec <= startSec) {
                 showToast("종료 시간은 시작 시간보다 커야 합니다.");
                 return;
@@ -613,24 +508,18 @@
             let title = document.getElementById('segmentTitleInput').value.trim();
             if (!title) {
                 const placeholder = document.getElementById('segmentTitleInput').placeholder;
-                if (placeholder && placeholder.startsWith('유튜브 제목:')) {
-                    title = placeholder.replace('유튜브 제목: ', '');
-                } else {
-                    title = `${startStr} ~ ${endStr} 반복 구간`;
-                }
+                title = placeholder && placeholder.startsWith('유튜브 제목:') ? placeholder.replace('유튜브 제목: ', '') : `${document.getElementById('startTimeInput').value} ~ ${document.getElementById('endTimeInput').value} 반복 구간`;
             }
 
             const segments = getStoredSegments();
-            const newSegment = {
+            segments.unshift({
                 id: 'seg_' + Date.now(),
                 videoId: currentVideoId,
                 title: title,
                 start: startSec,
                 end: endSec,
                 createdAt: new Date().toISOString()
-            };
-
-            segments.unshift(newSegment);
+            });
             saveStoredSegments(segments);
             renderSavedSegments();
             showToast("구간이 안전하게 저장되었습니다.");
@@ -638,41 +527,27 @@
 
         function deleteSegment(id, event) {
             event.stopPropagation();
-            let segments = getStoredSegments();
-            segments = segments.filter(s => s.id !== id);
-            saveStoredSegments(segments);
+            saveStoredSegments(getStoredSegments().filter(s => s.id !== id));
             renderSavedSegments();
             showToast("구간이 삭제되었습니다.");
         }
 
         function filterSegments(mode) {
             activeFilter = mode;
-            const curBtn = document.getElementById('filterCurrentBtn');
-            const allBtn = document.getElementById('filterAllBtn');
-            if (mode === 'current') {
-                curBtn.className = "bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-medium";
-                allBtn.className = "bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors";
-            } else {
-                allBtn.className = "bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-medium";
-                curBtn.className = "bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors";
-            }
+            document.getElementById('filterCurrentBtn').className = mode === 'current' ? "bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-medium" : "bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors";
+            document.getElementById('filterAllBtn').className = mode === 'all' ? "bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-medium" : "bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition-colors";
             renderSavedSegments();
         }
 
         function renderSavedSegments() {
             const container = document.getElementById('savedSegmentsList');
             let segments = getStoredSegments();
-
             if (activeFilter === 'current' && currentVideoId) {
                 segments = segments.filter(s => s.videoId === currentVideoId);
             }
 
             if (segments.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-full py-8 text-center text-slate-500 text-sm">
-                        ${activeFilter === 'current' && !currentVideoId ? '영상을 불러오면 해당 영상의 저장된 구간을 확인할 수 있습니다.' : '저장된 구간이 없습니다.'}
-                    </div>
-                `;
+                container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-sm">저장된 구간이 없습니다.</div>`;
                 return;
             }
 
@@ -699,17 +574,11 @@
             if (!currentVideoId) return '';
             const startSec = parseTimeString(document.getElementById('startTimeInput').value);
             const endSec = parseTimeString(document.getElementById('endTimeInput').value);
-            
             let title = document.getElementById('segmentTitleInput').value.trim();
             if (!title) {
                 const placeholder = document.getElementById('segmentTitleInput').placeholder;
-                if (placeholder && placeholder.startsWith('유튜브 제목:')) {
-                    title = placeholder.replace('유튜브 제목: ', '');
-                } else {
-                    title = '구간 반복';
-                }
+                title = placeholder && placeholder.startsWith('유튜브 제목:') ? placeholder.replace('유튜브 제목: ', '') : '구간 반복';
             }
-
             const baseUrl = window.location.origin + window.location.pathname;
             return `${baseUrl}?v=${currentVideoId}&start=${startSec}&end=${endSec}&title=${encodeURIComponent(title)}`;
         }
@@ -719,9 +588,7 @@
                 showToast("먼저 영상을 불러주세요.");
                 return;
             }
-            const url = getShareUrl();
-            document.getElementById('shareUrlInput').value = url;
-            
+            document.getElementById('shareUrlInput').value = getShareUrl();
             const modal = document.getElementById('shareModal');
             modal.classList.remove('hidden');
             setTimeout(() => {
@@ -736,77 +603,43 @@
             modal.classList.add('opacity-0');
             modal.querySelector('#shareModalContent').classList.remove('scale-100');
             modal.querySelector('#shareModalContent').classList.add('scale-95');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
         function handleModalOutsideClick(event) {
-            const modalContent = document.getElementById('shareModalContent');
-            if (!modalContent.contains(event.target)) {
-                closeShareModal();
-            }
+            if (!document.getElementById('shareModalContent').contains(event.target)) closeShareModal();
         }
 
         function copyShareUrl() {
-            const input = document.getElementById('shareUrlInput');
-            navigator.clipboard.writeText(input.value).then(() => {
+            navigator.clipboard.writeText(document.getElementById('shareUrlInput').value).then(() => {
                 showToast("링크가 클립보드에 복사되었습니다!");
                 closeShareModal();
-            }).catch(() => {
-                showToast("링크 복사에 실패했습니다.");
-            });
+            }).catch(() => { showToast("링크 복사에 실패했습니다."); });
         }
 
         function shareNaver() {
-            const url = encodeURIComponent(getShareUrl());
-            const titleInput = document.getElementById('segmentTitleInput').value.trim();
-            const placeholder = document.getElementById('segmentTitleInput').placeholder;
-            let title = titleInput;
-            if (!title) {
-                title = placeholder && placeholder.startsWith('유튜브 제목:') ? placeholder.replace('유튜브 제목: ', '') : '유튜브 구간 반복';
-            }
-            const naverUrl = `https://share.naver.com/web/shareView.nhn?url=${url}&title=${encodeURIComponent(title)}`;
-            window.open(naverUrl, '_blank', 'width=600,height=500');
+            window.open(`https://share.naver.com/web/shareView.nhn?url=${encodeURIComponent(getShareUrl())}&title=${encodeURIComponent(document.getElementById('segmentTitleInput').value.trim() || '유튜브 구간 반복')}`, '_blank', 'width=600,height=500');
             closeShareModal();
         }
 
         function shareTwitter() {
-            const url = encodeURIComponent(getShareUrl());
-            const titleInput = document.getElementById('segmentTitleInput').value.trim();
-            const placeholder = document.getElementById('segmentTitleInput').placeholder;
-            let title = titleInput;
-            if (!title) {
-                title = placeholder && placeholder.startsWith('유튜브 제목:') ? placeholder.replace('유튜브 제목: ', '') : '구간 공유';
-            }
-            const text = encodeURIComponent(`[유튜브 구간 반복] ${title}\n`);
-            const twitterUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
-            window.open(twitterUrl, '_blank', 'width=600,height=500');
+            window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(getShareUrl())}&text=${encodeURIComponent(`[유튜브 구간 반복] ${document.getElementById('segmentTitleInput').value.trim() || '구간 공유'}\n`)}`, '_blank', 'width=600,height=500');
             closeShareModal();
         }
 
         function shareFacebook() {
-            const url = encodeURIComponent(getShareUrl());
-            const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
-            window.open(fbUrl, '_blank', 'width=600,height=500');
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getShareUrl())}`, '_blank', 'width=600,height=500');
             closeShareModal();
         }
 
         function checkUrlParametersAndLoad() {
             const urlParams = new URLSearchParams(window.location.search);
             const v = urlParams.get('v');
-            const start = urlParams.get('start');
-            const end = urlParams.get('end');
-            const title = urlParams.get('title');
-
             if (v) {
-                const startSec = start !== null ? parseFloat(start) : 0;
-                const endSec = end !== null ? parseFloat(end) : 10;
-                loadVideo(v, startSec, endSec, title ? decodeURIComponent(title) : '');
+                loadVideo(v, urlParams.get('start') !== null ? parseFloat(urlParams.get('start')) : 0, urlParams.get('end') !== null ? parseFloat(urlParams.get('end')) : 10, urlParams.get('title') ? decodeURIComponent(urlParams.get('title')) : '');
             }
         }
 
-        // 백업 내보내기 함수 (수정 완료)
         function exportData() {
             const segments = getStoredSegments();
             if (segments.length === 0) {
@@ -817,28 +650,18 @@
             let currentTitle = document.getElementById('segmentTitleInput').value.trim();
             if (!currentTitle) {
                 const placeholder = document.getElementById('segmentTitleInput').placeholder;
-                if (placeholder && placeholder.startsWith('유튜브 제목:')) {
-                    currentTitle = placeholder.replace('유튜브 제목: ', '');
-                } else {
-                    currentTitle = 'youtubeloop_segment';
-                }
+                currentTitle = placeholder && placeholder.startsWith('유튜브 제목:') ? placeholder.replace('유튜브 제목: ', '') : 'youtubeloop_segment';
             }
 
             let safeTitle = currentTitle.replace(/[\/\\?%*:|"<>]/g, '_');
-            if (safeTitle.length > 15) {
-                safeTitle = safeTitle.substring(0, 15) + "..";
-            }
+            if (safeTitle.length > 15) safeTitle = safeTitle.substring(0, 15) + "..";
 
-            const startStr = document.getElementById('startTimeInput').value.trim();
-            const endStr = document.getElementById('endTimeInput').value.trim();
-            const safeStart = startStr.replace(/[:]/g, '').replace(/\./g, '');
-            const safeEnd = endStr.replace(/[:]/g, '').replace(/\./g, '');
-
+            const safeStart = document.getElementById('startTimeInput').value.trim().replace(/[:]/g, '').replace(/\./g, '');
+            const safeEnd = document.getElementById('endTimeInput').value.trim().replace(/[:]/g, '').replace(/\./g, '');
             const fileName = `[YLP Setting] ${safeTitle}_${safeStart}~${safeEnd}.json`;
  
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(segments, null, 2));
             const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("href", "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(segments, null, 2)));
             downloadAnchor.setAttribute("download", fileName);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
@@ -846,7 +669,6 @@
             showToast("백업 파일이 다운로드되었습니다.");
         }
 
-        // 백업 파일 불러오기(가져오기) 함수 추가 완료
         function importData(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -860,16 +682,11 @@
                         [...imported, ...existing].forEach(item => {
                             if (item.id && item.videoId) map.set(item.id, item);
                         });
-                        const merged = Array.from(map.values());
-                        saveStoredSegments(merged);
+                        saveStoredSegments(Array.from(map.values()));
                         renderSavedSegments();
                         showToast(`성공적으로 ${imported.length}개의 구간 데이터를 가져왔습니다.`);
-                    } else {
-                        showToast("올바른 백업 파일 형식이 아닙니다.");
-                    }
-                } catch (err) {
-                    showToast("JSON 파일을 읽는 중 오류가 발생했습니다.");
-                }
+                    } else { showToast("올바른 백업 파일 형식이 아닙니다."); }
+                } catch (err) { showToast("JSON 파일을 읽는 중 오류가 발생했습니다."); }
                 event.target.value = '';
             };
             reader.readAsText(file);
@@ -887,10 +704,7 @@
             document.getElementById('toast-text').innerText = message;
             toast.classList.remove('opacity-0');
             toast.classList.add('opacity-100');
-            setTimeout(() => {
-                toast.classList.remove('opacity-100');
-                toast.classList.add('opacity-0');
-            }, 3000);
+            setTimeout(() => { toast.classList.remove('opacity-100'); toast.classList.add('opacity-0'); }, 3000);
         }
 
         function escapeHtml(str) {
@@ -898,9 +712,7 @@
         }
 
         document.getElementById('videoUrlInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                loadVideo();
-            }
+            if (e.key === 'Enter') loadVideo();
         });
 
         renderSavedSegments();
