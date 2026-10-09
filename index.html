@@ -45,17 +45,43 @@
             } catch (e) {}
         });
 
-        function shareKakao() {
-            const segmentTitle = document.getElementById('segmentTitleInput').value.trim() || 'Youtube Loop Player';
-            const shareUrl = getShareUrl(); 
+        async function shareKakao() {
+            const shareUrl = getShareUrl();
+            const customTitle = document.getElementById('segmentTitleInput').value.trim();
+            const placeholderDefault = document.getElementById('segmentTitleInput').placeholder;
+            
+            // 썸네일: 현재 비디오 ID가 있으면 유튜브 썸네일, 없으면 기본 앱 로고 사용
+            const thumbnailImageUrl = currentVideoId 
+                ? `https://img.youtube.com/vi/${currentVideoId}/hqdefault.jpg` 
+                : 'https://minjukang727.github.io/youtube-loop-player/youtube_loop_player.png';
+
+            // 타이틀: 입력된 값이 없으면 placeholder(유튜브 제목) 또는 기본값 사용
+            let finalTitle = customTitle;
+            if (!finalTitle) {
+                if (placeholderDefault && placeholderDefault.startsWith('유튜브 제목:')) {
+                    finalTitle = placeholderDefault.replace('유튜브 제목: ', '');
+                } else if (currentVideoId) {
+                    try {
+                        const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${currentVideoId}&format=json`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            finalTitle = data.title;
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            if (!finalTitle) {
+                finalTitle = '유튜브 구간 반복 플레이어';
+            }
 
             try {
                 Kakao.Share.sendDefault({
                     objectType: 'feed',
                     content: {
-                        title: `🎬 ${segmentTitle}`,
-                        description: '유튜브 구간 반복 재생하기',
-                        imageUrl: 'https://minjukang727.github.io/youtube-loop-player/youtube_loop_player.png', 
+                        title: `🎬 ${finalTitle}`,
+                        description: '원하는 구간을 무한 반복해서 연습할 수 있는 링크입니다!',
+                        imageUrl: thumbnailImageUrl,
                         link: {
                             mobileWebUrl: shareUrl,
                             webUrl: shareUrl,
@@ -183,7 +209,7 @@
 
                     <div class="flex flex-col gap-1.5">
                         <label for="segmentTitleInput" class="text-xs font-medium text-slate-300">구간 제목 / 메모</label>
-                        <input type="text" id="segmentTitleInput" placeholder="예: 후렴구 안무 연습 1번" 
+                        <input type="text" id="segmentTitleInput" placeholder="기본값: 유튜브 제목" 
                             class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500">
                     </div>
 
@@ -353,7 +379,7 @@
             return null;
         }
 
-        function loadVideo(targetVideoId, startSec, endSec, segmentTitle) {
+        async function loadVideo(targetVideoId, startSec, endSec, segmentTitle) {
             const inputVal = targetVideoId || document.getElementById('videoUrlInput').value;
             const videoId = extractVideoId(inputVal);
 
@@ -365,6 +391,17 @@
             currentVideoId = videoId;
             if (!targetVideoId) {
                 document.getElementById('videoUrlInput').value = `https://www.youtube.com/watch?v=${videoId}`;
+            }
+
+            // 유튜브 oEmbed API를 통해 실제 영상 제목을 가져와서 placeholder에 세팅
+            try {
+                const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('segmentTitleInput').placeholder = `유튜브 제목: ${data.title}`;
+                }
+            } catch (e) {
+                document.getElementById('segmentTitleInput').placeholder = "기본값: 유튜브 제목";
             }
 
             document.getElementById('player-placeholder').style.display = 'none';
@@ -544,7 +581,12 @@
 
             let title = document.getElementById('segmentTitleInput').value.trim();
             if (!title) {
-                title = `${startStr} ~ ${endStr} 반복 구간`;
+                const placeholder = document.getElementById('segmentTitleInput').placeholder;
+                if (placeholder && placeholder.startsWith('유튜브 제목:')) {
+                    title = placeholder.replace('유튜브 제목: ', '');
+                } else {
+                    title = `${startStr} ~ ${endStr} 반복 구간`;
+                }
             }
 
             const segments = getStoredSegments();
@@ -626,7 +668,16 @@
             if (!currentVideoId) return '';
             const startSec = parseTimeString(document.getElementById('startTimeInput').value);
             const endSec = parseTimeString(document.getElementById('endTimeInput').value);
-            const title = document.getElementById('segmentTitleInput').value.trim() || '구간 반복';
+            
+            let title = document.getElementById('segmentTitleInput').value.trim();
+            if (!title) {
+                const placeholder = document.getElementById('segmentTitleInput').placeholder;
+                if (placeholder && placeholder.startsWith('유튜브 제목:')) {
+                    title = placeholder.replace('유튜브 제목: ', '');
+                } else {
+                    title = '구간 반복';
+                }
+            }
 
             const baseUrl = window.location.origin + window.location.pathname;
             return `${baseUrl}?v=${currentVideoId}&start=${startSec}&end=${endSec}&title=${encodeURIComponent(title)}`;
@@ -678,15 +729,26 @@
 
         function shareNaver() {
             const url = encodeURIComponent(getShareUrl());
-            const title = encodeURIComponent(document.getElementById('segmentTitleInput').value.trim() || '유튜브 구간 반복');
-            const naverUrl = `https://share.naver.com/web/shareView.nhn?url=${url}&title=${title}`;
+            const titleInput = document.getElementById('segmentTitleInput').value.trim();
+            const placeholder = document.getElementById('segmentTitleInput').placeholder;
+            let title = titleInput;
+            if (!title) {
+                title = placeholder && placeholder.startsWith('유튜브 제목:') ? placeholder.replace('유튜브 제목: ', '') : '유튜브 구간 반복';
+            }
+            const naverUrl = `https://share.naver.com/web/shareView.nhn?url=${url}&title=${encodeURIComponent(title)}`;
             window.open(naverUrl, '_blank', 'width=600,height=500');
             closeShareModal();
         }
 
         function shareTwitter() {
             const url = encodeURIComponent(getShareUrl());
-            const text = encodeURIComponent(`[유튜브 구간 반복] ${document.getElementById('segmentTitleInput').value.trim() || '구간 공유'}\n`);
+            const titleInput = document.getElementById('segmentTitleInput').value.trim();
+            const placeholder = document.getElementById('segmentTitleInput').placeholder;
+            let title = titleInput;
+            if (!title) {
+                title = placeholder && placeholder.startsWith('유튜브 제목:') ? placeholder.replace('유튜브 제목: ', '') : '구간 공유';
+            }
+            const text = encodeURIComponent(`[유튜브 구간 반복] ${title}\n`);
             const twitterUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
             window.open(twitterUrl, '_blank', 'width=600,height=500');
             closeShareModal();
