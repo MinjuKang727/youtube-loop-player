@@ -382,7 +382,7 @@
         let currentVideoId = '';
         let loopCounter = 0;
         let activeFilter = 'current';
-        const STORAGE_KEY = 'tubeloop_saved_segments_v1';
+        const STORAGE_KEY = 'youtubeloop_saved_segments_v1';
 
         function getStoredSegments() {
             try {
@@ -818,49 +818,48 @@
             }
         }
 
-        function exportData() {
-            const segments = getStoredSegments();
-            if (segments.length === 0) {
-                showToast("내보낼 저장된 구간 데이터가 없습니다.");
-                return;
-            }
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(segments, null, 2));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `tubeloop_backup_${new Date().toISOString().slice(0,10)}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-            showToast("백업 파일이 다운로드되었습니다.");
+    function exportData() {
+        const segments = getStoredSegments();
+        if (segments.length === 0) {
+            showToast("내보낼 저장된 구간 데이터가 없습니다.");
+            return;
         }
 
-        function importData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const imported = JSON.parse(e.target.result);
-                    if (Array.isArray(imported)) {
-                        const existing = getStoredSegments();
-                        const map = new Map();
-                        [...imported, ...existing].forEach(item => {
-                            if (item.id && item.videoId) map.set(item.id, item);
-                        });
-                        const merged = Array.from(map.values());
-                        saveStoredSegments(merged);
-                        renderSavedSegments();
-                        showToast(`성공적으로 ${imported.length}개의 구간 데이터를 가져왔습니다.`);
-                    } else {
-                        showToast("올바른 백업 파일 형식이 아닙니다.");
-                    }
-                } catch (err) {
-                    showToast("JSON 파일을 읽는 중 오류가 발생했습니다.");
-                }
-                event.target.value = '';
-            };
-            reader.readAsText(file);
+        // 1. 현재 입력창의 타이틀 가져오기 (없으면 유튜브 플레이스홀더 또는 기본값 활용)
+        let currentTitle = document.getElementById('segmentTitleInput').value.trim();
+        if (!currentTitle) {
+            const placeholder = document.getElementById('segmentTitleInput').placeholder;
+            if (placeholder && placeholder.startsWith('유튜브 제목:')) {
+                currentTitle = placeholder.replace('유튜브 제목: ', '');
+            } else {
+                currentTitle = 'youtubeloop_segment';
+            }
         }
+
+        // 2. 파일명에 사용할 수 없는 특수문자 제거 또는 대체 (Windows/Mac 파일명 안전 처리)
+        const safeTitle = currentTitle.replace(/[\/\\?%*:|"<>]/g, '_');
+        if (safeTitle.length > 15) {
+            safeTitle = safeTitle.substring(0, 15) + "..."; // 파일명 길이 제한
+        }
+
+        // 3. 현재 설정된 시작 시간과 종료 시간 가져오기 (예: 01:23.5)
+        const startStr = document.getElementById('startTimeInput').value.trim();
+        const endStr = document.getElementById('endTimeInput').value.trim();
+        const safeStart = startStr.replace(/[:]/g, '-'); // 콜론(:)을 하이픈(-)으로 변경 (예: 01-23.5)
+        const safeEnd = endStr.replace(/[:]/g, '-');
+
+        // 4. 최종 파일명 조합 (예: "영상제목_00-00.0~00-10.0.json")
+        const fileName = `youtubeloop_${safeTitle}_${safeStart}${safeEnd}.json`;
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(segments, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", fileName);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        showToast("백업 파일이 다운로드되었습니다.");
+    }
 
         function showToast(message) {
             let toast = document.getElementById('custom-toast');
