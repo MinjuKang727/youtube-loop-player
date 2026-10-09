@@ -845,12 +845,12 @@
         // 3. 현재 설정된 시작 시간과 종료 시간 가져오기 (예: 01:23.5)
         const startStr = document.getElementById('startTimeInput').value.trim();
         const endStr = document.getElementById('endTimeInput').value.trim();
-        const safeStart = startStr.replace(/[:]/g, '-'); // 콜론(:)을 하이픈(-)으로 변경 (예: 01-23.5)
-        const safeEnd = endStr.replace(/[:]/g, '-');
+        const safeStart = startStr.replace(/[:]/g, '').replace(/\./g, ''); // 콜론(:), 마침표(.)을 없애기
+        const safeEnd = endStr.replace(/[:]/g, '').replace(/\./g, '');
 
-        // 4. 최종 파일명 조합 (예: "영상제목_00-00.0~00-10.0.json")
-        const fileName = `youtubeloop_${safeTitle}_${safeStart}${safeEnd}.json`;
-
+        // 4. 최종 파일명 조합 (예: "[YLP Setting] 영상제목_00000~00000.json")
+        const fileName = `[YLP Setting] ${safeTitle}_${safeStart}~${safeEnd}.json`;
+ 
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(segments, null, 2));
         const downloadAnchor = document.createElement('a');
         downloadAnchor.setAttribute("href", dataStr);
