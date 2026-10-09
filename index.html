@@ -45,11 +45,27 @@
             } catch (e) {}
         });
 
+        // 초 단위를 'X분 Y초' 형식으로 변환하는 도우미 함수
+        function formatKoreanTime(seconds) {
+            if (isNaN(seconds) || seconds < 0) return "0분 0초";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}분 ${secs}초`;
+        }
+
         async function shareKakao() {
             const shareUrl = getShareUrl();
             const customTitle = document.getElementById('segmentTitleInput').value.trim();
             const placeholderDefault = document.getElementById('segmentTitleInput').placeholder;
             
+            const customDesc = document.getElementById('segmentDescInput').value.trim();
+            const startSec = parseTimeString(document.getElementById('startTimeInput').value);
+            const endSec = parseTimeString(document.getElementById('endTimeInput').value);
+            
+            // 설명 기본값 설정: 입력값이 없으면 "X분 Y초 ~ X분 Y초 무한 구간 반복" 생성
+            const defaultDesc = `${formatKoreanTime(startSec)} ~ ${formatKoreanTime(endSec)} 무한 구간 반복 재생 링크입니다.`;
+            const finalDesc = customDesc || defaultDesc;
+
             // 썸네일: 현재 비디오 ID가 있으면 유튜브 썸네일, 없으면 기본 앱 로고 사용
             const thumbnailImageUrl = currentVideoId 
                 ? `https://img.youtube.com/vi/${currentVideoId}/hqdefault.jpg` 
@@ -80,7 +96,7 @@
                     objectType: 'feed',
                     content: {
                         title: `🎬 ${finalTitle}`,
-                        description: '원하는 구간을 무한 반복해서 연습할 수 있는 링크입니다!',
+                        description: finalDesc,
                         imageUrl: thumbnailImageUrl,
                         link: {
                             mobileWebUrl: shareUrl,
@@ -193,7 +209,7 @@
 
             <!-- Loop Controls Column -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between gap-6 backdrop-blur">
-                <div class="flex flex-col gap-5">
+                <div class="flex flex-col gap-4">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                         <h2 class="text-base font-semibold text-white flex items-center gap-2">
                             <i class="fa-solid fa-repeat text-red-500"></i> 구간 반복 설정
@@ -207,9 +223,17 @@
                         </div>
                     </div>
 
+                    <!-- Title Input -->
                     <div class="flex flex-col gap-1.5">
                         <label for="segmentTitleInput" class="text-xs font-medium text-slate-300">구간 제목 / 메모</label>
                         <input type="text" id="segmentTitleInput" placeholder="기본값: 유튜브 제목" 
+                            class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500">
+                    </div>
+
+                    <!-- Description Input -->
+                    <div class="flex flex-col gap-1.5">
+                        <label for="segmentDescInput" class="text-xs font-medium text-slate-300">공유 설명 (Description)</label>
+                        <input type="text" id="segmentDescInput" placeholder="기본값: 0분 0초 ~ 0분 10초 무한 구간 반복" 
                             class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500">
                     </div>
 
@@ -299,7 +323,7 @@
                 </button>
             </div>
             
-            <p class="text-xs text-slate-400 mb-5">현재 설정된 반복 구간과 제목이 포함된 링크를 공유해 보세요.</p>
+            <p class="text-xs text-slate-400 mb-5">현재 설정된 반복 구간과 내용이 포함된 링크를 공유해 보세요.</p>
 
             <div class="grid grid-cols-2 gap-3 mb-5">
                 <button onclick="shareKakao()" class="bg-[#fee500] hover:bg-[#fdd800] text-[#191919] font-medium text-xs py-3 px-4 rounded-xl flex items-center justify-center space-x-2 transition-colors shadow-md">
@@ -473,6 +497,13 @@
             return `${padMins}:${padSecs}`;
         }
 
+        function formatKoreanTime(seconds) {
+            if (isNaN(seconds) || seconds < 0) return "0분 0초";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}분 ${secs}초`;
+        }
+
         function parseTimeString(timeStr) {
             if (!timeStr) return 0;
             timeStr = timeStr.toString().trim();
@@ -495,15 +526,20 @@
 
                     document.getElementById('currentTimeDisplay').innerText = `${formatTime(currentTime)} / ${formatTime(duration)}`;
 
+                    // 설명 입력창 placeholder 실시간 업데이트
+                    const startSec = parseTimeString(document.getElementById('startTimeInput').value);
+                    const endSec = parseTimeString(document.getElementById('endTimeInput').value);
+                    const descInput = document.getElementById('segmentDescInput');
+                    if (descInput && !descInput.value) {
+                        descInput.placeholder = `기본값: ${formatKoreanTime(startSec)} ~ ${formatKoreanTime(endSec)} 무한 구간 반복`;
+                    }
+
                     const isLoopEnabled = document.getElementById('loopToggle').checked;
                     if (!isLoopEnabled) return;
 
-                    const startTime = parseTimeString(document.getElementById('startTimeInput').value);
-                    const endTime = parseTimeString(document.getElementById('endTimeInput').value);
-
-                    if (endTime > startTime && endTime > 0) {
-                        if (currentTime >= endTime - 0.05) {
-                            player.seekTo(startTime, true);
+                    if (endSec > startSec && endSec > 0) {
+                        if (currentTime >= endSec - 0.05) {
+                            player.seekTo(startSec, true);
                             loopCounter++;
                             document.getElementById('loopCount').innerText = loopCounter;
                         }
