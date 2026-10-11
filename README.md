@@ -22,6 +22,9 @@
 - **로컬 저장 및 백업**: 자주 사용하는 반복 구간을 브라우저(`localStorage`)에 저장하고, JSON 파일 형식으로 백업 및 복원(내보내기/가져오기)할 수 있습니다.
 - **재생 속도 및 카운터**: 0.5배속부터 2배속까지 자유로운 재생 속도 조절 및 실시간 반복 횟수(Loop Count) 카운팅을 지원합니다.
 
+<a href="https://youtu.be/MhNdFLg3xjM?si=9edmgHWbH1urJQLu"><img width="640" height="360" alt="Vibe Coding  Youtube Loop Player 사용법" src="https://github.com/user-attachments/assets/374ef17f-db63-41ee-90dc-8c8e20e77c32" /></a>
+
+
 ---
 
 ## 🛠️ 3. 트러블슈팅 & 4. 해결 방법
