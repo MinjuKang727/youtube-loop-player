@@ -24,7 +24,7 @@
 
 <table>
   <tr>
-    <td><a href="https://youtu.be/MhNdFLg3xjM?si=9edmgHWbH1urJQLu"><img width="640" height="360" alt="Vibe Coding  Youtube Loop Player 사용법" src="https://github.com/user-attachments/assets/374ef17f-db63-41ee-90dc-8c8e20e77c32" /></a></td>
+    <td><a href="https://youtu.be/MhNdFLg3xjM?si=9edmgHWbH1urJQLu"><img width="640" height="360" alt="Vibe Coding  Youtube Loop Player 사용법" src="https://github.com/MinjuKang727/youtube-loop-player/blob/165843365fbf88779e7fa83ab3e369df9ee38289/How%20to%20Use%20Youtube%20Loop%20Player.gif" /></a></td>
     <td>👈 왼쪽 이미지를 클릭하시면<br>유튜브에서 영상을 보실 수 있습니다.<br>(저화질 재생시, 설정에서 화질을 변경하세요.)</td>
   </tr>
 </table>
